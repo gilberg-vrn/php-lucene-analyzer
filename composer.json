@@ -1,0 +1,46 @@
+{
+    "name": "gilberg-vrn/php-analyzer",
+    "type": "library",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Dmitry Emelyanov",
+            "email": "gilberg.vrn@gmail.com"
+        }
+    ],
+    "description": "Pure PHP port of Lucene analyzer stack",
+    "minimum-stability": "dev",
+    "require": {
+        "ext-mbstring": "*",
+        "ext-iconv": "*",
+        "ext-intl": "*",
+        "ext-gmp": "*",
+        "gilberg-vrn/php-mafsa": "dev-master",
+        "gilberg-vrn/php-calque": "dev-master",
+        "gilberg-vrn/php-tartarus": "dev-master",
+        "gilberg-vrn/php-morfologik": "dev-master"
+    },
+    "autoload": {
+        "psr-4": {
+            "ftIndex\\": "src/"
+        }
+    },
+    "repositories": [
+        {
+            "type": "git",
+            "url": "https://github.com/gilberg-vrn/mafsa.git"
+        },
+        {
+            "type": "git",
+            "url": "https://github.com/gilberg-vrn/calque.git"
+        },
+        {
+            "type": "git",
+            "url": "https://github.com/gilberg-vrn/php-snowball.git"
+        },
+        {
+            "type": "git",
+            "url": "https://github.com/gilberg-vrn/php-morfologik.git"
+        }
+    ]
+}

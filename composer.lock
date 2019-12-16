@@ -1,0 +1,132 @@
+{
+    "_readme": [
+        "This file locks the dependencies of your project to a known state",
+        "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
+        "This file is @generated automatically"
+    ],
+    "content-hash": "9d730190e2b7d4d775a957f4a03ffd8a",
+    "packages": [
+        {
+            "name": "gilberg-vrn/php-calque",
+            "version": "dev-master",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/gilberg-vrn/calque.git",
+                "reference": "2f2435992bcad787ee3dba8fe431203a12a9642c"
+            },
+            "type": "library",
+            "autoload": {
+                "psr-4": {
+                    "calque\\": "src/"
+                }
+            },
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Dmitry Emelyanov",
+                    "email": "gilberg.vrn@gmail.com"
+                }
+            ],
+            "description": "Pure PHP implementing an FST (finite state transducer)",
+            "time": "2019-12-16T14:32:06+00:00"
+        },
+        {
+            "name": "gilberg-vrn/php-mafsa",
+            "version": "dev-master",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/gilberg-vrn/mafsa.git",
+                "reference": "e1e14e0fb5f3899d45b5de6d40623cad66055744"
+            },
+            "type": "library",
+            "autoload": {
+                "psr-4": {
+                    "mafsa\\": "src/"
+                }
+            },
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Dmitry Emelyanov",
+                    "email": "gilberg.vrn@gmail.com"
+                }
+            ],
+            "description": "Pure PHP Minimal Acyclic Finite State Automata (MA-FSA)",
+            "time": "2019-12-16T14:11:26+00:00"
+        },
+        {
+            "name": "gilberg-vrn/php-morfologik",
+            "version": "dev-master",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/gilberg-vrn/php-morfologik.git",
+                "reference": "92aa256f61b8d71acb90d5402e674292d2dec29f"
+            },
+            "type": "library",
+            "autoload": {
+                "psr-4": {
+                    "morfologik\\": "src/"
+                }
+            },
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Dmitry Emelyanov",
+                    "email": "gilberg.vrn@gmail.com"
+                }
+            ],
+            "description": "Pure PHP port of morfologik stemming algorithm",
+            "time": "2019-12-16T15:44:37+00:00"
+        },
+        {
+            "name": "gilberg-vrn/php-tartarus",
+            "version": "dev-master",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/gilberg-vrn/php-snowball.git",
+                "reference": "5d7ae24d513ca49d3c1956c575a2ee6ba4433c35"
+            },
+            "type": "library",
+            "autoload": {
+                "psr-4": {
+                    "tartarus\\": "src/"
+                }
+            },
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Dmitry Emelyanov",
+                    "email": "gilberg.vrn@gmail.com"
+                }
+            ],
+            "description": "PHP port of tartarus lib",
+            "time": "2019-12-16T14:49:17+00:00"
+        }
+    ],
+    "packages-dev": [],
+    "aliases": [],
+    "minimum-stability": "dev",
+    "stability-flags": {
+        "gilberg-vrn/php-mafsa": 20,
+        "gilberg-vrn/php-calque": 20,
+        "gilberg-vrn/php-tartarus": 20,
+        "gilberg-vrn/php-morfologik": 20
+    },
+    "prefer-stable": false,
+    "prefer-lowest": false,
+    "platform": {
+        "ext-mbstring": "*",
+        "ext-iconv": "*",
+        "ext-intl": "*",
+        "ext-gmp": "*"
+    },
+    "platform-dev": []
+}
