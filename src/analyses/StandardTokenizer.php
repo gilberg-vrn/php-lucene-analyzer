@@ -314,12 +314,12 @@ final class StandardTokenizer extends TokenStream
     /**
      * Translates characters to character classes
      */
-    private static $ZZ_CMAP;
+    public static $ZZ_CMAP;
 
     /**
      * Translates DFA states to action switch labels.
      */
-    private static $ZZ_ACTION;
+    public static $ZZ_ACTION;
 
     private static $ZZ_ACTION_PACKED_0 =
         "\u{1}\u{0}\u{1}\u{1}\u{1}\u{2}\u{1}\u{3}\u{1}\u{4}\u{1}\u{5}\u{1}\u{1}\u{1}\u{6}" .
@@ -351,7 +351,7 @@ final class StandardTokenizer extends TokenStream
     /**
      * Translates a state to a row index in the transition table
      */
-    private static $ZZ_ROWMAP;
+    public static $ZZ_ROWMAP;
 
     private static $ZZ_ROWMAP_PACKED_0 =
         "\u{0}\u{0}\u{0}\u{12}\u{0}\u{24}\u{0}\u{36}\u{0}\u{48}\u{0}\u{5a}\u{0}\u{6c}\u{0}\u{7e}" .
@@ -380,7 +380,7 @@ final class StandardTokenizer extends TokenStream
     /**
      * The transition table of the DFA
      */
-    private static $ZZ_TRANS;
+    public static $ZZ_TRANS;
 
     private static $ZZ_TRANS_PACKED_0 =
         "\u{1}\u{2}\u{1}\u{3}\u{1}\u{4}\u{1}\u{2}\u{1}\u{5}\u{1}\u{6}\u{3}\u{2}\u{1}\u{7}" .
@@ -445,7 +445,7 @@ final class StandardTokenizer extends TokenStream
     /**
      * ZZ_ATTRIBUTE[aState] contains the attributes of state <code>aState</code>
      */
-    private static $ZZ_ATTRIBUTE;
+    public static $ZZ_ATTRIBUTE;
 
     private static $ZZ_ATTRIBUTE_PACKED_0 =
         "\u{1}\u{0}\u{1}\u{9}\u{b}\u{1}\u{1}\u{0}\u{1}\u{1}\u{1}\u{0}\u{1}\u{1}\u{1}\u{0}" .
@@ -486,7 +486,7 @@ final class StandardTokenizer extends TokenStream
 
     /** this buffer contains the current text to be matched and is
      * the source of the yytext() string */
-    private $zzBuffer = "";
+    private $zzBuffer = [];
 
     /** the textposition at the last accepting state */
     private $zzMarkedPos = 0;
@@ -574,7 +574,7 @@ final class StandardTokenizer extends TokenStream
      */
     public final function getText(&$t)
     {
-        $t = mb_substr($this->zzBuffer, $this->zzStartRead, $this->zzMarkedPos - $this->zzStartRead);
+        $t = implode('', array_slice($this->zzBuffer, $this->zzStartRead, $this->zzMarkedPos - $this->zzStartRead));
     }
 
     /**
@@ -585,8 +585,8 @@ final class StandardTokenizer extends TokenStream
     public final function setBufferSize(int $numChars)
     {
         $this->ZZ_BUFFERSIZE = $numChars;
-        $this->zzBuffer = mb_substr($this->zzBuffer, 0, min(mb_strlen($this->zzBuffer), $this->ZZ_BUFFERSIZE));
-        $this->zzBuffer = str_pad($this->zzBuffer, $this->ZZ_BUFFERSIZE, "\0");
+        $this->zzBuffer = array_slice($this->zzBuffer, 0, min(count($this->zzBuffer), $this->ZZ_BUFFERSIZE));
+        $this->zzBuffer = array_pad($this->zzBuffer, $this->ZZ_BUFFERSIZE, "\0");
     }
 
     /**
@@ -600,12 +600,12 @@ final class StandardTokenizer extends TokenStream
             $in = new Reader($in);
         }
         $this->zzReader = $in;
-        $this->zzBuffer = str_pad($this->zzBuffer, $this->ZZ_BUFFERSIZE, "\0");
-        self::$ZZ_CMAP = self::zzUnpackCMap(self::$ZZ_CMAP_PACKED);
-        self::$ZZ_ACTION = self::zzUnpackAction();
-        self::$ZZ_ROWMAP = self::zzUnpackRowMap();
-        self::$ZZ_TRANS = self::zzUnpackTrans();
-        self::$ZZ_ATTRIBUTE = self::zzUnpackAttribute();
+        $this->zzBuffer = array_pad($this->zzBuffer, $this->ZZ_BUFFERSIZE, "\0");
+        !self::$ZZ_CMAP && self::$ZZ_CMAP = self::zzUnpackCMap(self::$ZZ_CMAP_PACKED);
+        !self::$ZZ_ACTION && self::$ZZ_ACTION = self::zzUnpackAction();
+        !self::$ZZ_ROWMAP && self::$ZZ_ROWMAP = self::zzUnpackRowMap();
+        !self::$ZZ_TRANS && self::$ZZ_TRANS = self::zzUnpackTrans();
+        !self::$ZZ_ATTRIBUTE && self::$ZZ_ATTRIBUTE = self::zzUnpackAttribute();
     }
 
 
@@ -647,7 +647,7 @@ final class StandardTokenizer extends TokenStream
             $this->zzEndRead += $this->zzFinalHighSurrogate;
             $this->zzFinalHighSurrogate = 0;
 
-            $this->zzBuffer = mb_substr($this->zzBuffer, $this->zzStartRead, $this->zzEndRead - $this->zzStartRead);
+            $this->zzBuffer = array_slice($this->zzBuffer, $this->zzStartRead, $this->zzEndRead - $this->zzStartRead);
 
             /* translate stored positions */
             $this->zzEndRead -= $this->zzStartRead;
@@ -658,7 +658,7 @@ final class StandardTokenizer extends TokenStream
 
 
         /* fill the buffer with new input */
-        $requested = mb_strlen($this->zzBuffer) - $this->zzEndRead - $this->zzFinalHighSurrogate;
+        $requested = count($this->zzBuffer) - $this->zzEndRead - $this->zzFinalHighSurrogate;
         $totalRead = 0;
         while ($totalRead < $requested) {
             $numRead = $this->zzReader->read($this->zzBuffer, $this->zzEndRead + $totalRead, $requested - $totalRead);
@@ -671,7 +671,7 @@ final class StandardTokenizer extends TokenStream
         if ($totalRead > 0) {
             $this->zzEndRead += $totalRead;
             if ($totalRead == $requested) { /* possibly more input available */
-                if (self::isHighSurrogate(mb_substr($this->zzBuffer, $this->zzEndRead - 1, 1))) {
+                if (self::isHighSurrogate($this->zzBuffer[$this->zzEndRead - 1])) {
                     --$this->zzEndRead;
                     $this->zzFinalHighSurrogate = 1;
                     if ($totalRead == 1) {
@@ -793,8 +793,8 @@ final class StandardTokenizer extends TokenStream
         $this->zzFinalHighSurrogate = 0;
         $this->yyline = $this->yychar = $this->yycolumn = 0;
         $this->zzLexicalState = self::$YYINITIAL;
-        if (mb_strlen($this->zzBuffer) > $this->ZZ_BUFFERSIZE) {
-            $this->zzBuffer = "";
+        if (count($this->zzBuffer) > $this->ZZ_BUFFERSIZE) {
+            $this->zzBuffer = [];
         } //new char[$this->ZZ_BUFFERSIZE];
     }
 
@@ -824,7 +824,7 @@ final class StandardTokenizer extends TokenStream
      */
     public final function yytext(): string
     {
-        return mb_substr($this->zzBuffer, $this->zzStartRead, $this->zzMarkedPos - $this->zzStartRead);
+        return implode('', array_slice($this->zzBuffer, $this->zzStartRead, $this->zzMarkedPos - $this->zzStartRead));
     }
 
 
@@ -841,7 +841,7 @@ final class StandardTokenizer extends TokenStream
      */
     public final function yycharat(int $pos)
     {
-        return mb_substr($this->zzBuffer, $this->zzStartRead + $pos, 1);
+        return $this->zzBuffer[$this->zzStartRead + $pos];
     }
 
 
@@ -938,6 +938,8 @@ final class StandardTokenizer extends TokenStream
      */
     public function getNextToken(): int
     {
+        static $intlCache = [], $ordCache = [];
+
         $zzEndReadL = $this->zzEndRead;
         $zzBufferL = $this->zzBuffer;
         $zzCMapL = self::$ZZ_CMAP;
@@ -961,7 +963,7 @@ final class StandardTokenizer extends TokenStream
             $this->zzState = self::$ZZ_LEXSTATE[$this->zzLexicalState];
 
             // set up zzAction for empty match case:
-            $zzAttributes = IntlChar::ord($zzAttrL[$this->zzState]);
+            $zzAttributes = isset($intlCache[$zzAttrL[$this->zzState]]) ? $intlCache[$zzAttrL[$this->zzState]] : $intlCache[$zzAttrL[$this->zzState]] = IntlChar::ord($zzAttrL[$this->zzState]);
             if (($zzAttributes & 1) == 1) {
                 $zzAction = $this->zzState;
             }
@@ -971,7 +973,7 @@ final class StandardTokenizer extends TokenStream
 //                error_log('Second while');
                 if ($zzCurrentPosL < $zzEndReadL) {
 //                    var_dump(101);
-                    $zzInput = IntlChar::ord(mb_substr($zzBufferL, $zzCurrentPosL, 1)); //$zzEndReadL);
+                    $zzInput = isset($intlCache[$zzBufferL[$zzCurrentPosL]]) ? $intlCache[$zzBufferL[$zzCurrentPosL]] : $intlCache[$zzBufferL[$zzCurrentPosL]] = IntlChar::ord($zzBufferL[$zzCurrentPosL]); //$zzEndReadL);
                     $zzCurrentPosL += ($zzInput >= 0x10000 ? 2 : 1);
                 } elseif ($this->zzAtEOF) {
 //                    var_dump(102);
@@ -992,11 +994,11 @@ final class StandardTokenizer extends TokenStream
                         $zzInput = self::$YYEOF;
                         break;
                     } else {
-                        $zzInput = IntlChar::ord(mb_substr($zzBufferL, $zzCurrentPosL, 1)); //Character.codePointAt(zzBufferL, zzCurrentPosL, zzEndReadL);
+                        $zzInput = isset($intlCache[$zzBufferL[$zzCurrentPosL]]) ? $intlCache[$zzBufferL[$zzCurrentPosL]] : $intlCache[$zzBufferL[$zzCurrentPosL]] = IntlChar::ord($zzBufferL[$zzCurrentPosL]); //Character.codePointAt(zzBufferL, zzCurrentPosL, zzEndReadL);
                         $zzCurrentPosL += ($zzInput >= 0x10000 ? 2 : 1);
                     }
                 }
-                $zzNext = $zzTransL[$zzRowMapL[$this->zzState] + ord($zzCMapL[$zzInput])];
+                $zzNext = $zzTransL[$zzRowMapL[$this->zzState] + (isset($zzCMapL[$zzInput]) ? ($ordCache[$zzCMapL[$zzInput]] ?? $ordCache[$zzCMapL[$zzInput]] = ord($zzCMapL[$zzInput])) : 0)];
                 if ($zzNext == -1) {
                     break;
                 }

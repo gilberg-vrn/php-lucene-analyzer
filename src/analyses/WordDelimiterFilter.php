@@ -160,7 +160,7 @@ final class WordDelimiterFilter extends TokenStream
     // used for accumulating position increment gaps
     public $accumPosInc = 0;
 
-    private $savedBuffer = "";
+    private $savedBuffer = [];
     public $savedStartOffset;
     public $savedEndOffset;
     public $savedType;
@@ -217,18 +217,17 @@ final class WordDelimiterFilter extends TokenStream
                 if (!$this->input->incrementToken()) {
                     return false;
                 }
-
-                $termLength = mb_strlen($this->termAttribute);
+                
                 $termBuffer = $this->termAttribute;
 
                 $this->accumPosInc += $this->posIncAttribute;
 
-                $this->iterator->setText($termBuffer, $termLength);
+                $this->iterator->setText($termBuffer);
                 $this->iterator->next();
 
                 // word of no delimiters, or protected word: just return it
-                if (($this->iterator->current == 0 && $this->iterator->end == $termLength) ||
-                    ($this->protWords !== null && isset($this->protWords[mb_substr($termBuffer, 0, $termLength)]))) {
+                if (($this->iterator->current == 0 && $this->iterator->end == $this->iterator->length) ||
+                    ($this->protWords !== null && isset($this->protWords[$termBuffer]))) {
                     $this->posIncAttribute = $this->accumPosInc;
                     $this->accumPosInc = 0;
                     $this->first = false;
@@ -391,7 +390,7 @@ final class WordDelimiterFilter extends TokenStream
         $this->hasIllegalOffsets = ($this->savedEndOffset - $this->savedStartOffset != mb_strlen($this->termAttribute));
         $this->savedType = $this->typeAttribute;
 
-        $this->savedBuffer = $this->termAttribute;
+        $this->savedBuffer = preg_split('//u', $this->termAttribute, -1, PREG_SPLIT_NO_EMPTY);
         $this->iterator->text = $this->savedBuffer;
 
         $this->hasSavedState = true;
@@ -462,7 +461,7 @@ final class WordDelimiterFilter extends TokenStream
     {
         $this->clearAttributes();
 
-        $this->termAttribute = mb_substr($this->savedBuffer, $this->iterator->current, $this->iterator->end - $this->iterator->current);
+        $this->termAttribute = implode('', array_slice($this->savedBuffer, $this->iterator->current, $this->iterator->end - $this->iterator->current));
         $startOffset = $this->savedStartOffset + $this->iterator->current;
         $endOffset = $this->savedStartOffset + $this->iterator->end;
 
@@ -592,13 +591,13 @@ final class WordDelimiterConcatenation
     /**
      * Appends the given text of the given length, to the concetenation at the given offset
      *
-     * @param string $text   Text to append
+     * @param array $text   Text to append
      * @param int    $offset Offset in the concetenation to add the text
      * @param int    $length Length of the text to append
      */
     public function append($text, int $offset, int $length)
     {
-        $this->buffer .= mb_substr($text, $offset, $length);
+        $this->buffer .= implode('', array_slice($text, $offset, $length));
         $this->subwordCount++;
     }
 

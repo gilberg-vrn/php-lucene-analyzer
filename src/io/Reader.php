@@ -31,17 +31,17 @@ class Reader
         $this->dataSize = count($this->data);
     }
 
-    public function read(&$buf, int $offset, int $count)
+    public function read(array &$buf, int $offset, int $count)
     {
-        if (strlen($buf) < $offset) {
-            $buf = str_pad($buf, $offset - 1, "\0");
+        if (count($buf) < $offset) {
+            $buf = array_pad($buf, $offset - 1, "\0");
         }
 
         if ($this->position + 1 >= $this->dataSize) {
             return -1;
         }
 
-        $string = implode('', array_slice($this->data, $this->position, $count));
+        $string = array_slice($this->data, $this->position, $count);
         $this->position += $count;
         $writeCount = $count;
         $buf = $this->substr_replace($buf, $string, $offset);
@@ -64,23 +64,23 @@ class Reader
     private function substr_replace($input, $replacement, $offset, $length = null)
     {
         if ($offset > 0) {
-            $prefix = mb_substr($input, 0, $offset - 1);
+            $prefix = array_slice($input, 0, $offset - 1);
         } else {
-            $prefix = '';
+            $prefix = [];
         }
 
         if ($length !== null) {
-            $length = min(mb_strlen($replacement), $length);
+            $length = min(count($replacement), $length);
         } else {
-            $length = mb_strlen($replacement);
+            $length = count($replacement);
         }
 
-        if ($offset + $length < mb_strlen($input)) {
-            $postfix = mb_substr($input, $offset + $length);
+        if ($offset + $length < count($input)) {
+            $postfix = array_slice($input, $offset + $length);
         } else {
-            $postfix = '';
+            $postfix = [];
         }
 
-        return $prefix . $replacement . $postfix;
+        return $prefix + $replacement + $postfix;
     }
 }

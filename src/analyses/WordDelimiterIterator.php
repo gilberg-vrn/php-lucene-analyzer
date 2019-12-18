@@ -25,7 +25,7 @@ final class WordDelimiterIterator
 
     public static $DEFAULT_WORD_DELIM_TABLE;
 
-    public $text = "";
+    public $text = [];
     public $length;
 
     /** start position of text, excluding leading delimiters */
@@ -137,7 +137,8 @@ final class WordDelimiterIterator
 
         $lastType = 0;
 
-        while ($this->current < $this->endBounds && ($this->isSubwordDelim($lastType = $this->charType(\IntlChar::ord(mb_substr($this->text, $this->current, 1)))))) {
+        while ($this->current < $this->endBounds && ($this->isSubwordDelim($lastType = $this->charType($this->text[$this->current])))) {
+//        while ($this->current < $this->endBounds && ($this->isSubwordDelim($lastType = $this->charType(\IntlChar::ord($this->text[$this->current]))))) {
             $this->current++;
         }
 
@@ -146,7 +147,8 @@ final class WordDelimiterIterator
         }
 
         for ($this->end = $this->current + 1; $this->end < $this->endBounds; $this->end++) {
-            $type = $this->charType(\IntlChar::ord(mb_substr($this->text, $this->end, 1)));
+            $type = $this->charType($this->text[$this->end]);
+//            $type = $this->charType(\IntlChar::ord($this->text[$this->end]));
             if ($this->isBreak($lastType, $type)) {
                 break;
             }
@@ -173,7 +175,8 @@ final class WordDelimiterIterator
             return 0;
         }
 
-        $type = $this->charType(\IntlChar::ord(mb_substr($this->text, $this->current, 1)));
+        $type = $this->charType($this->text[$this->current]);
+//        $type = $this->charType(\IntlChar::ord($this->text[$this->current]));
         switch ($type) {
             // return ALPHA word type for both lower and upper
             case self::LOWER:
@@ -188,12 +191,11 @@ final class WordDelimiterIterator
      * Reset the text to a new value, and reset all state
      *
      * @param string $text   New text
-     * @param int    $length length of the text
      */
-    public function setText($text, int $length)
+    public function setText($text)
     {
-        $this->text = $text;
-        $this->length = $this->endBounds = $length;
+        $this->text = preg_split('//u', $text, -1, PREG_SPLIT_NO_EMPTY);
+        $this->length = $this->endBounds = count($this->text);
         $this->current = $this->startBounds = $this->end = 0;
         $this->skipPossessive = $this->hasFinalPossessive = false;
         $this->setBounds();
@@ -253,11 +255,11 @@ final class WordDelimiterIterator
      */
     private function setBounds()
     {
-        while ($this->startBounds < $this->length && ($this->isSubwordDelim($this->charType(\IntlChar::ord(mb_substr($this->text, $this->startBounds, 1)))))) {
+        while ($this->startBounds < $this->length && ($this->isSubwordDelim($this->charType($this->text[$this->startBounds])))) {
             $this->startBounds++;
         }
 
-        while ($this->endBounds > $this->startBounds && ($this->isSubwordDelim($this->charType(\IntlChar::ord(mb_substr($this->text, $this->endBounds - 1, 1)))))) {
+        while ($this->endBounds > $this->startBounds && ($this->isSubwordDelim($this->charType($this->text[$this->endBounds - 1])))) {
             $this->endBounds--;
         }
         if ($this->endsWithPossessive($this->endBounds)) {
@@ -277,41 +279,48 @@ final class WordDelimiterIterator
     {
         return ($this->stemEnglishPossessive &&
             $pos > 2 &&
-            mb_substr($this->text, $pos - 2, 1) == '\'' &&
-            (mb_substr($this->text, $pos - 1, 1) == 's' || mb_substr($this->text, $pos - 1, 1) == 'S') &&
-            $this->isAlpha($this->charType(\IntlChar::ord(mb_substr($this->text, $pos - 3, 1))) &&
-                ($pos == $this->endBounds || $this->isSubwordDelim($this->charType(\IntlChar::ord(mb_substr($this->text, $pos, 1)))))));
+            $this->text[$pos - 2] == '\'' &&
+            ($this->text[$pos - 1] == 's' || $this->text[$pos - 1] == 'S') &&
+            $this->isAlpha($this->charType($this->text[$pos - 3]) &&
+                ($pos == $this->endBounds || $this->isSubwordDelim($this->charType($this->text[$pos])))));
     }
 
     /**
      * Determines the type of the given character
      *
-     * @param int $ch Character whose type is to be determined
+     * @param int|string $ch Character whose type is to be determined
      *
      * @return int Type of the character
      */
-    private function charType(int $ch): int
+    private function charType($ch): int
     {
-        if ($ch < count($this->charTypeTable)) {
+        if (isset($this->charTypeTable[$ch])) {
             return $this->charTypeTable[$ch];
         }
+
         return $this->getType($ch);
     }
 
     /**
      * Computes the type of the given character
      *
-     * @param int $ch Character whose type is to be determined
+     * @param int|string $ch Character whose type is to be determined
      *
      * @return int Type of the character
      */
-    public static function getType(int $ch): int
+    public static function getType($ch): int
     {
+        static $cache = [];
+
+        if (isset($cache[$ch])) {
+            return $cache[$ch];
+        }
+
         switch (IntlChar::charType($ch)) {
             case IntlChar::CHAR_CATEGORY_UPPERCASE_LETTER:
-                return self::UPPER;
+                return $cache[$ch] = self::UPPER;
             case IntlChar::CHAR_CATEGORY_LOWERCASE_LETTER:
-                return self::LOWER;
+                return $cache[$ch] = self::LOWER;
 
             case IntlChar::CHAR_CATEGORY_TITLECASE_LETTER:
             case IntlChar::CHAR_CATEGORY_MODIFIER_LETTER:
@@ -319,12 +328,12 @@ final class WordDelimiterIterator
             case IntlChar::CHAR_CATEGORY_NON_SPACING_MARK:
             case IntlChar::CHAR_CATEGORY_ENCLOSING_MARK:  // depends what it encloses?
             case IntlChar::CHAR_CATEGORY_COMBINING_SPACING_MARK:
-                return self::ALPHA;
+                return $cache[$ch] = self::ALPHA;
 
             case IntlChar::CHAR_CATEGORY_DECIMAL_DIGIT_NUMBER:
             case IntlChar::CHAR_CATEGORY_LETTER_NUMBER:
             case IntlChar::CHAR_CATEGORY_OTHER_NUMBER:
-                return self::DIGIT;
+                return $cache[$ch] = self::DIGIT;
 
             // case \IntlChar::CHAR_CATEGORY_SPACE_SEPARATOR:
             // case \IntlChar::CHAR_CATEGORY_LINE_SEPARATOR:
@@ -334,7 +343,7 @@ final class WordDelimiterIterator
             // case \IntlChar::CHAR_CATEGORY_PRIVATE_USE:
 
             case IntlChar::CHAR_CATEGORY_SURROGATE:  // prevent splitting
-                return self::ALPHA | self::DIGIT;
+                return $cache[$ch] = self::ALPHA | self::DIGIT;
 
             // case \IntlChar::CHAR_CATEGORY_DASH_PUNCTUATION:
             // case \IntlChar::CHAR_CATEGORY_START_PUNCTUATION:
@@ -349,7 +358,7 @@ final class WordDelimiterIterator
             // case \IntlChar::CHAR_CATEGORY_FINAL_QUOTE_PUNCTUATION:
 
             default:
-                return self::SUBWORD_DELIM;
+                return $cache[$ch] = self::SUBWORD_DELIM;
         }
     }
 

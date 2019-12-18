@@ -309,18 +309,17 @@ final class WordDelimiterGraphFilter extends TokenStream
                     return false;
                 }
 
-                $termLength = mb_strlen($this->termAttribute);
                 $termBuffer = $this->termAttribute;
 
                 $this->accumPosInc += $this->posIncAttribute;
 
                 // iterate & cache all word parts up front:
-                $this->iterator->setText($termBuffer, $termLength);
+                $this->iterator->setText($termBuffer);
                 $this->iterator->next();
 
                 // word of no delimiters, or protected word: just return it
-                if (($this->iterator->current == 0 && $this->iterator->end == $termLength) ||
-                    ($this->protWords != null && isset($this->protWords[mb_substr($termBuffer, 0, $termLength)]))) {
+                if (($this->iterator->current == 0 && $this->iterator->end == $this->iterator->length) ||
+                    ($this->protWords != null && isset($this->protWords[$termBuffer]))) {
                     $this->posIncAttribute = $this->accumPosInc;
                     $this->accumPosInc = 0;
                     return true;
