@@ -14,6 +14,17 @@ use ftIndex\analyses\morphology\LuceneMorphology;
 class RussianLuceneMorphology
     extends LuceneMorphology
 {
+    public static function getInstance()
+    {
+        static $instance;
+
+        if ($instance === null) {
+            $instance = new self();
+        }
+
+        return $instance;
+    }
+
     public function __construct()
     {
         parent::__construct([], [], [], []);
