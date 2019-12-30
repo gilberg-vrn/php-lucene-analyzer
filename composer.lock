@@ -64,7 +64,7 @@
             "source": {
                 "type": "git",
                 "url": "https://github.com/gilberg-vrn/php-morfologik.git",
-                "reference": "92aa256f61b8d71acb90d5402e674292d2dec29f"
+                "reference": "d708b2431b9639040551dc2da1606ffb19f0d05e"
             },
             "type": "library",
             "autoload": {
@@ -82,7 +82,7 @@
                 }
             ],
             "description": "Pure PHP port of morfologik stemming algorithm",
-            "time": "2019-12-16T15:44:37+00:00"
+            "time": "2019-12-30T13:37:00+00:00"
         },
         {
             "name": "gilberg-vrn/php-tartarus",
