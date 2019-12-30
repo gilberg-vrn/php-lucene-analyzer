@@ -110,7 +110,7 @@ final class WordDelimiterIterator
                 if ($code == 0) {
                     $code = WordDelimiterIterator::SUBWORD_DELIM;
                 }
-                $tab[$i] = $code;
+                $tab[IntlChar::chr($i)] = $code;
             }
             WordDelimiterIterator::$DEFAULT_WORD_DELIM_TABLE = $tab;
         }
@@ -294,11 +294,13 @@ final class WordDelimiterIterator
      */
     private function charType($ch): int
     {
-        if (isset($this->charTypeTable[$ch])) {
-            return $this->charTypeTable[$ch];
+        static $cache = [];
+
+        if (isset($cache[$ch])) {
+            return $cache[$ch];
         }
 
-        return $this->getType($ch);
+        return $cache[$ch] = ($this->charTypeTable[$ch] ?? $this->getType($ch));
     }
 
     /**
@@ -310,17 +312,11 @@ final class WordDelimiterIterator
      */
     public static function getType($ch): int
     {
-        static $cache = [];
-
-        if (isset($cache[$ch])) {
-            return $cache[$ch];
-        }
-
         switch (IntlChar::charType($ch)) {
             case IntlChar::CHAR_CATEGORY_UPPERCASE_LETTER:
-                return $cache[$ch] = self::UPPER;
+                return self::UPPER;
             case IntlChar::CHAR_CATEGORY_LOWERCASE_LETTER:
-                return $cache[$ch] = self::LOWER;
+                return self::LOWER;
 
             case IntlChar::CHAR_CATEGORY_TITLECASE_LETTER:
             case IntlChar::CHAR_CATEGORY_MODIFIER_LETTER:
@@ -328,12 +324,12 @@ final class WordDelimiterIterator
             case IntlChar::CHAR_CATEGORY_NON_SPACING_MARK:
             case IntlChar::CHAR_CATEGORY_ENCLOSING_MARK:  // depends what it encloses?
             case IntlChar::CHAR_CATEGORY_COMBINING_SPACING_MARK:
-                return $cache[$ch] = self::ALPHA;
+                return self::ALPHA;
 
             case IntlChar::CHAR_CATEGORY_DECIMAL_DIGIT_NUMBER:
             case IntlChar::CHAR_CATEGORY_LETTER_NUMBER:
             case IntlChar::CHAR_CATEGORY_OTHER_NUMBER:
-                return $cache[$ch] = self::DIGIT;
+                return self::DIGIT;
 
             // case \IntlChar::CHAR_CATEGORY_SPACE_SEPARATOR:
             // case \IntlChar::CHAR_CATEGORY_LINE_SEPARATOR:
@@ -343,7 +339,7 @@ final class WordDelimiterIterator
             // case \IntlChar::CHAR_CATEGORY_PRIVATE_USE:
 
             case IntlChar::CHAR_CATEGORY_SURROGATE:  // prevent splitting
-                return $cache[$ch] = self::ALPHA | self::DIGIT;
+                return self::ALPHA | self::DIGIT;
 
             // case \IntlChar::CHAR_CATEGORY_DASH_PUNCTUATION:
             // case \IntlChar::CHAR_CATEGORY_START_PUNCTUATION:
@@ -358,7 +354,7 @@ final class WordDelimiterIterator
             // case \IntlChar::CHAR_CATEGORY_FINAL_QUOTE_PUNCTUATION:
 
             default:
-                return $cache[$ch] = self::SUBWORD_DELIM;
+                return self::SUBWORD_DELIM;
         }
     }
 

@@ -91,40 +91,55 @@ class Morphology
 
     protected function findRuleId(array $ints): int
     {
+        static $cache = [];
+
+        $key = md5(json_encode($ints));
+
+        if (isset($cache[$key])) {
+            return $cache[$key];
+        }
+
+        $intsL = count($ints);
+
         $low = 0;
         $high = count($this->separators) - 1;
         $mid = 0;
+
+        $found = false;
         while ($low <= $high) {
-            $mid = ($low + $high);
-            $mid = BitUtil::uRShift($mid, 1);
+            $mid = ($low + $high) >> 1;
+//            $mid = ($low + $high);
+//            $mid = BitUtil::uRShift($mid, 1);
             $midVal = $this->separators[$mid];
 
-            $comResult = $this->compareToInts($ints, $midVal);
+            $comResult = $this->compareToInts($ints, $midVal, $intsL);
             if ($comResult > 0) {
                 $low = $mid + 1;
             } elseif ($comResult < 0) {
                 $high = $mid - 1;
             } else {
+                $found = true;
                 break;
             }
         }
-        if ($this->compareToInts($ints, $this->separators[$mid]) >= 0) {
-            return $mid;
+
+        if (($found && $comResult >= 0) || ($this->compareToInts($ints, $this->separators[$mid], $intsL) >= 0)) {
+            return $cache[$key] = $mid;
         } else {
-            return $mid - 1;
+            return $cache[$key] = $mid - 1;
         }
     }
 
-    private function compareToInts(array $i1, array $i2): int
+    private function compareToInts(array $i1, array $i2, $i1l): int
     {
-        $minLength = min(count($i1), count($i2));
+        $minLength = min($i1l, count($i2));
         for ($i = 0; $i < $minLength; $i++) {
             $i3 = $i1[$i] < $i2[$i] ? -1 : ($i1[$i] == $i2[$i] ? 0 : 1);
             if ($i3 != 0) {
                 return $i3;
             }
         }
-        return count($i1) - count($i2);
+        return $i1l - count($i2);
     }
 
     public function writeToFile(string $fileName)

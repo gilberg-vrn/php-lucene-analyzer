@@ -179,7 +179,7 @@ final class WordDelimiterGraphFilter extends TokenStream
      * @param int         $configurationFlags Flags configuring the filter
      * @param array       $protWords          If not null is the set of tokens to protect from being delimited
      */
-    public function __construct(TokenStream $input, array $charTypeTable = [], int $configurationFlags = null, array $protWords = [])
+    public function __construct(TokenStream $input, array $charTypeTable = null, int $configurationFlags = null, array $protWords = [])
     {
         parent::__construct($input);
         if (($configurationFlags &
