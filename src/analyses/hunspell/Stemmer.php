@@ -305,14 +305,26 @@ class Stemmer
             $lookupPrefix = '';
             $prefixes = [];
 
+            $matchPrefixes = [];
+            foreach ($this->dictionary->prefixes as $fstPrefix => $fstPrefixId) {
+                if (!isset($this->dictionary->prefixesCache[$fstPrefix])) {
+                    $this->dictionary->prefixesCache[$fstPrefix] = preg_split('//u', $fstPrefix, -1, PREG_SPLIT_NO_EMPTY);
+                } else {
+                    if ($this->dictionary->prefixesCache[$fstPrefix][0] === $word[0]) {
+                        $matchPrefixes[] = $fstPrefix;
+                    }
+                }
+            }
+
             $limit = $this->dictionary->fullStrip ? $length : $length - 1;
             for ($i = 0; $i < $limit; $i++) {
                 if ($i > 0) {
                     $lookupPrefix .= $word[$i - 1];
                     $foundPrefix = false;
-                    foreach ($this->dictionary->prefixes as $fstPrefix => $fstPrefixId) {
+                    foreach ($matchPrefixes as $fstPrefix) {
+//                    foreach ($this->dictionary->prefixes as $fstPrefix => $fstPrefixId) {
                         if ($fstPrefix == $lookupPrefix) {
-                            $prefixes = array_merge($prefixes, $fstPrefixId);
+                            $prefixes = array_merge($prefixes, $this->dictionary->prefixes[$fstPrefix]);
                             array_unique($prefixes);
                             $foundPrefix = true;
                         } elseif (preg_match("/^{$lookupPrefix}/", $fstPrefix) > 0) {
@@ -327,7 +339,8 @@ class Stemmer
                     continue;
                 }
 
-                for ($j = 0; $j < count($prefixes); $j++) {
+                $prefixesCount = count($prefixes);
+                for ($j = 0; $j < $prefixesCount; $j++) {
                     $prefix = $prefixes[$j];
                     if ($prefix == $previous) {
                         continue;
@@ -395,21 +408,43 @@ class Stemmer
         if ($doSuffix && $this->dictionary->suffixes != null) {
             $lookupSuffix = '';
             $limit = $this->dictionary->fullStrip ? 0 : 1;
+
+            $matchSuffixes = [];
+            foreach ($this->dictionary->suffixes as $fstSuffix => $fstSuffixId) {
+                if (!isset($fstSuffix[0])) {
+                    continue;
+                }
+
+                if (!isset($this->dictionary->suffixesCache[$fstSuffix])) {
+                    $this->dictionary->suffixesCache[$fstSuffix] = preg_split('//u', $fstSuffix, -1, PREG_SPLIT_NO_EMPTY);
+                } else {
+                    if ($this->dictionary->suffixesCache[$fstSuffix][0] === $word[$length - 1]) {
+                        $matchSuffixes[] = $fstSuffix;
+                    }
+                }
+            }
+
             for ($i = $length; $i >= $limit; $i--) {
                 $suffixes = [];
                 if ($i < $length) {
                     $lookupSuffix .= $word[$i];
                     $foundSuffix = false;
                     $foundNextSuffix = false;
-                    foreach ($this->dictionary->suffixes as $fstSuffix => $fstSuffixId) {
+                    foreach ($matchSuffixes as $fstSuffix) {
+//                    foreach ($this->dictionary->suffixes as $fstSuffix => $fstSuffixId) {
                         if ($fstSuffix === $lookupSuffix) {
                             $foundSuffix = true;
-                            $suffixes = $fstSuffixId;
+                            $suffixes = $this->dictionary->suffixes[$fstSuffix];
                             break;
-                        } elseif (preg_match("/^{$lookupSuffix}/", $fstSuffix) > 0) {
+
+                        } elseif (strpos($fstSuffix, $lookupSuffix) === 0) {
+                            $suffixes = $this->dictionary->suffixes[$fstSuffix];
                             $foundNextSuffix = true;
-                            $suffixes = $fstSuffixId;
                         }
+//                        } elseif (preg_match("/^{$lookupSuffix}/", $fstSuffix) > 0) {
+//                            $foundNextSuffix = true;
+//                            $suffixes = $fstSuffixId;
+//                        }
                     }
 
                     if (!$foundSuffix) {
@@ -424,7 +459,8 @@ class Stemmer
                     }
                 }
 
-                for ($j = 0; $j < count($suffixes); $j++) {
+                $suffixesCount = count($suffixes);
+                for ($j = 0; $j < $suffixesCount; $j++) {
                     $suffix = $suffixes[$j];
                     if ($suffix == $previous) {
                         continue;

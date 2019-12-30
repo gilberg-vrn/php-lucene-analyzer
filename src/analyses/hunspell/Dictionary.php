@@ -47,9 +47,11 @@ class Dictionary
 
     /** @var FST */
     public $prefixes = [];
+    public $prefixesCache = [];
 
     /** @var FST */
     public $suffixes = [];
+    public $suffixesCache = [];
 
     // all condition checks used by prefixes and suffixes. these are typically re-used across
     // many affix stripping rules. so these are deduplicated, to save RAM.
