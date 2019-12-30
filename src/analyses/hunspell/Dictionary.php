@@ -220,7 +220,10 @@ class Dictionary
 //            die();
 
 //            $this->words = $this->affixFST($b);
-            $this->words = $this->simpleFST($b);
+            $timer = microtime(1);
+            $this->words = $this->calqueFST($b);
+//            $this->words = $this->simpleFST($b);
+            error_log('prepareFST: ' . (microtime(1) - $timer));
 //            $this->words = $b; //$this->affixFST($b);
 
             $this->aliases = null; // no longer needed
@@ -236,6 +239,35 @@ class Dictionary
                 unlink($aff);
             }
         }
+    }
+
+    protected function calqueFST($words)
+    {
+        $filename = '/tmp/calque.' . md5(json_encode($words)) . '.fst';
+        $optionsStorage = [];
+        if (!file_exists($filename)) {
+            $w = fopen($filename, 'w+');
+            $builder = \calque\builder::newBuilder($w);
+
+            $counter = 0;
+            foreach ($words as $word => $options) {
+                $builder->Insert($word, $counter);
+                $optionsStorage[$counter++] = $options;
+            }
+            $builder->Close();
+        } else {
+            $counter = 0;
+            foreach ($words as $word => $options) {
+                $optionsStorage[$counter++] = $options;
+            }
+        }
+
+        $fst = new \calque\fst(file_get_contents($filename));
+
+        return [
+            'options' => $optionsStorage,
+            'fst' => $fst
+        ];
     }
 
     protected function simpleFST($words)
@@ -261,7 +293,8 @@ class Dictionary
     public function lookupWord($word, $offset, $length)
     {
 //        return $this->lookup($this->words, $word, $offset, $length);
-        return $this->lookupSimpleFst($this->words, $word, $offset, $length);
+        return $this->lookupCalque($this->words['fst'], $this->words['options'], $word);
+//        return $this->lookupSimpleFst($this->words, $word, $offset, $length);
 //        return $this->lookupFst($this->words, $word, $offset, $length);
     }
 
@@ -275,6 +308,16 @@ class Dictionary
     public function lookupSuffix($word, $offset, $length)
     {
         return $this->lookup($this->suffixes, $word, $offset, $length);
+    }
+
+    protected function lookupCalque(\calque\fst $fst, $options, $word)
+    {
+        list($result, $status, $err) = $fst->Get($word);
+        if (!$status) {
+            return null;
+        }
+
+        return $options[$result] ?? null;
     }
 
     protected function lookupSimpleFst(SimpleFST $words, $word, $offset, $length)
@@ -440,7 +483,7 @@ class Dictionary
                     throw new ParseException("Illegal IGNORE declaration. Line: {$lineNumber}");
                 }
                 $this->ignore = preg_split('//u', $parts[1], -1, PREG_SPLIT_NO_EMPTY);
-                sort($this->ignore);
+                $this->ignore = array_flip($this->ignore);
                 $this->needsInputCleaning = true;
             } elseif (mb_strpos($line, self::ICONV_KEY) === 0 || mb_strpos($line, self::OCONV_KEY) === 0) {
                 $parts = preg_split('/\s+/', $line);
@@ -469,7 +512,7 @@ class Dictionary
         $this->suffixes = $suffixes; //$this->affixFST($suffixes);
 
         $totalChars = 0;
-        foreach (array_keys($seenStrips) as $strip) {
+        foreach ($seenStrips as $strip => $v) {
             $totalChars += mb_strlen($strip);
         }
 
@@ -478,7 +521,7 @@ class Dictionary
         $currentOffset = 0;
         $currentIndex = 0;
 
-        foreach (array_keys($seenStrips) as $strip) {
+        foreach ($seenStrips as $strip => $v) {
             $this->stripOffsets[$currentIndex++] = $currentOffset;
 //        $strip.getChars(0, $strip.length(), $stripData, $currentOffset); // copy chars  from $strip from 0 to $strip.length() to $stripData at $currentOffset
             $currentOffset += mb_strlen($strip);
@@ -741,13 +784,41 @@ class Dictionary
         }
         $mappings = array_filter($mappings);
 
-        $res = new SimpleFST();
-        foreach ($mappings as $word => $replace) {
-            $replace = preg_split('//u', $replace, -1, PREG_SPLIT_NO_EMPTY);
-            $res->addWord($word, $replace);
+//        $res = new SimpleFST();
+//        foreach ($mappings as $word => $replace) {
+//            $replace = preg_split('//u', $replace, -1, PREG_SPLIT_NO_EMPTY);
+//            $res->addWord($word, $replace);
+//        }
+//
+//        return $res;
+
+
+        $fileName = '/tmp/calque.' . md5(json_encode($mappings)) . '.fst';
+
+        $replaceArray = [];
+        if (!file_exists($fileName)) {
+            $w = fopen($fileName, 'w+');
+            $builder = \calque\builder::newBuilder($w);
+
+            $counter = 0;
+            foreach ($mappings as $word => $replace) {
+                $builder->Insert($word, $counter);
+                $replaceArray[$counter++] = $replace;
+            }
+            $builder->Close();
+        } else {
+            $counter = 0;
+            foreach ($mappings as $word => $replace) {
+                $replaceArray[$counter++] = $replace;
+            }
         }
 
-        return $res;
+        $fst = new \calque\fst(file_get_contents($fileName));
+
+        return [
+            'replace' => $replaceArray,
+            'fst' => $fst
+        ];
     }
 
     /** pattern accepts optional BOM + SET + any whitespace */
@@ -852,10 +923,11 @@ class Dictionary
     protected function unescapeEntry($entry)
     {
         $sb = '';
-        $end = self::morphBoundary($entry);
+        $entryLength = strlen($entry);
+        $end = self::morphBoundary($entry, $entryLength);
         for ($i = 0; $i < $end; $i++) {
             $ch = $entry[$i];
-            if ($ch == '\\' && $i + 1 < strlen($entry)) {
+            if ($ch == '\\' && $i + 1 < $entryLength) {
                 $sb .= $entry[$i + 1];
                 $i++;
             } elseif ($ch == '/') {
@@ -867,8 +939,8 @@ class Dictionary
             }
         }
         $sb .= self::MORPH_SEPARATOR;
-        if ($end < strlen($entry)) {
-            for ($i = $end; $i < strlen($entry); $i++) {
+        if ($end < $entryLength) {
+            for ($i = $end; $i < $entryLength; $i++) {
                 $c = $entry[$i];
                 if ($c == self::FLAG_SEPARATOR || $c == self::MORPH_SEPARATOR) {
                     // BINARY EXECUTABLES EMBEDDED IN ZULU DICTIONARIES!!!!!!!
@@ -880,32 +952,35 @@ class Dictionary
         return $sb;
     }
 
-    static protected function morphBoundary($line)
+    static protected function morphBoundary($line, $length)
     {
-        $end = self::indexOfSpaceOrTab($line, 0);
+        $end = self::indexOfSpaceOrTab($line, 0, $length);
         if ($end === false) {
-            return strlen($line);
+            return $length;
         }
-        while ($end >= 0 && $end < strlen($line)) {
+        while ($end >= 0 && $end < $length) {
             if ($line[$end] == "\t" ||
-                $end + 3 < strlen($line) &&
+                $end + 3 < $length &&
                 preg_match('/[a-zа-яёЁ]/ui', $line[$end + 1]) &&
                 preg_match('/[a-zа-яёЁ]/ui', $line[$end + 2]) &&
                 $line[$end + 3] == ':'
             ) {
                 break;
             }
-            $end = self::indexOfSpaceOrTab($line, $end + 1);
+            $end = self::indexOfSpaceOrTab($line, $end + 1, $length);
         }
         if ($end == false) {
-            return strlen($line);
+            return $length;
         }
         return $end;
     }
 
-    static protected function indexOfSpaceOrTab($text, $start)
+    static protected function indexOfSpaceOrTab($text, $start, $length = null)
     {
-        if (strlen($text) < $start) {
+        if ($length === null) {
+            $length = strlen($text);
+        }
+        if ($length < $start) {
             return false;
         }
 
@@ -1195,10 +1270,12 @@ class Dictionary
     {
         $reuse = [];
 
-        for ($i = 0; $i < mb_strlen($input); $i++) {
-            $ch = mb_substr($input, $i, 1);
+        $input = preg_split('//u', $input, -1, PREG_SPLIT_NO_EMPTY);
+        $inputLen = count($input);
+        for ($i = 0; $i < $inputLen; $i++) {
+            $ch = $input[$i];
 
-            if ($this->ignore != null && in_array($ch, $this->ignore)) {
+            if ($this->ignore != null && isset($this->ignore[$ch])) {
                 continue;
             }
 
@@ -1247,24 +1324,36 @@ class Dictionary
     // TODO: this could be more efficient!
 
     /**
-     * @param array|SimpleFST $fst
+     * @param array $fstStorage
      * @param                 $sb
      */
-    static public function applyMappings($fst, &$sb)
+    static public function applyMappings($fstStorage, &$sb)
     {
-        for ($i = 0; $i < count($sb); $i++) {
+        /** @var \calque\fst $fst */
+        $fst = $fstStorage['fst'];
+        $replace = $fstStorage['replace'];
+        for ($i = 0; $i < ($sbCount = count($sb)); $i++) {
             $longestMatch = -1;
             $result = null;
             $longestResult = null;
 
             $part = '';
-            for ($j = $i; $j < count($sb); $j++) {
+            for ($j = $i; $j < $sbCount; $j++) {
                 $part .= $sb[$j];
-                if (($result = $fst->lookupWord($part)) === null) {
+//                if (($result = $fst->lookupWord($part)) === null) {
+//                    break;
+//                }
+
+                list($id, $status, $err) = $fst->Get($part);
+                if (!$status || !isset($replace[$id])) {
                     break;
                 }
-                $longestResult = $result;
 
+                $result = $replace[$id];
+                $longestResult = $result;
+            }
+
+            if ($longestResult) {
                 $longestMatch = count($longestResult);
             }
 
