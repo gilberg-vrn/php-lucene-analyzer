@@ -12,7 +12,7 @@
             "source": {
                 "type": "git",
                 "url": "https://github.com/gilberg-vrn/calque.git",
-                "reference": "2f2435992bcad787ee3dba8fe431203a12a9642c"
+                "reference": "f4b6c9fa743ea98ba0dcb446a277900abb2b9ffd"
             },
             "type": "library",
             "autoload": {
@@ -30,7 +30,7 @@
                 }
             ],
             "description": "Pure PHP implementing an FST (finite state transducer)",
-            "time": "2019-12-16T14:32:06+00:00"
+            "time": "2019-12-30T13:04:40+00:00"
         },
         {
             "name": "gilberg-vrn/php-mafsa",
